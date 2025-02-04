@@ -12,7 +12,7 @@ library(gstat)
 library(sp)
 
 # Ghana shapefile
-ghana_shapefile <- st_read("/Users/iprincetech/Desktop/R Project/gha_admbnda_gss_20210308_SHP/gha_admbnda_adm1_gss_20210308.shp")
+ghana_shapefile <- st_read("gha_admbnda_gss_20210308_SHP/gha_admbnda_adm1_gss_20210308.shp")
 head(ghana_shapefile)
 names(ghana_shapefile)
 
@@ -316,20 +316,15 @@ incEtreatment <- ggplot(treatment_comparison, aes(x = Period)) +
     axis.text.y = element_text(size = 10)
   )
 
-# Convert the ggplot to an interactive plotly plot
 plotly_incEtreatment <- ggplotly(incEtreatment) %>%
   layout(
     legend = list(title = list(text = "<b>Metric</b>")),
     title = list(text = "<b>Comparison of Malaria Incidence and Effective Treatment</b><br><i>Analyzed across intervention periods</i>")
   )
-
-# Display the plot
 plotly_incEtreatment
 
 
-# Load and prepare the merged dataset
-
-# Merge shapefile with full data
+# Merging shapefile with full data
 ghana_map_data <- merge(ghana_shapefile, ghana_full_data, by.x = "Region", by.y = "Name", all.x = TRUE)
 ghana_map_data$Year <- as.integer(ghana_map_data$Year)  # Ensure Year is numeric
 
@@ -340,7 +335,7 @@ library(shiny)
 library(leaflet)
 library(sf)
 
-# Example UI
+# UI
 ui <- fluidPage(
   titlePanel("Malaria Spatio-Temporal Dashboard"),
   sidebarLayout(
@@ -364,7 +359,7 @@ ui <- fluidPage(
   )
 )
 
-# Example Server
+# Server
 server <- function(input, output, session) {
   # Reactive data for the selected year
   year_data <- reactive({
@@ -372,7 +367,6 @@ server <- function(input, output, session) {
       filter(Year == input$year)  # Ensure Year column exists and is numeric
   })
   
-  # Render Leaflet Map
   output$map <- renderLeaflet({
     leaflet(year_data()) %>%
       addTiles() %>%  # Add OpenStreetMap tiles
@@ -385,7 +379,6 @@ server <- function(input, output, session) {
   })
 }
 
-# Run the app
 shinyApp(ui = ui, server = server)
 
 
