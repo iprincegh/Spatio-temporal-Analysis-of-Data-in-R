@@ -1,4 +1,3 @@
-# Load required libraries
 library(tidyverse)
 library(sf)
 library(ggplot2)
@@ -13,38 +12,36 @@ library(gstat)
 library(sp)
 library(spatialreg)
 
-# Set working directory
 setwd("~/Desktop/R Project")
 
-# Load Ghana shapefile
+# Ghana shapefile
 ghana_shapefile <- st_read("gha_admbnda_gss_20210308_SHP/gha_admbnda_adm1_gss_20210308.shp")
 head(ghana_shapefile)
 names(ghana_shapefile)
 
-# Rename columns for consistency
+# Renaming columns for consistency
 ghana_shapefile <- ghana_shapefile %>%
   rename(Region = ADM1_EN)
 
-# Check for valid geometries
+# Checking for valid geometries
 if (!all(st_is_valid(ghana_shapefile))) {
   ghana_shapefile <- st_make_valid(ghana_shapefile)
 }
 
-# Load malaria incidence data
+# malaria incidence data
 malaria_data <- read.csv("Subnational Unit-data.csv")
 head(malaria_data)
 names(malaria_data)
 
-# Clean malaria data names
 malaria_data$Name <- trimws(malaria_data$Name)  # Remove extra spaces
 
-# Load intervention data
+# intervention data
 intervention_data <- read.csv("ghana_intervention.csv")
 
-# Load treatment data
+# treatment data
 treatment_data <- read.csv("Treatment.csv")
 
-# Merge malaria data with intervention data
+# malaria data + intervention data
 ghana_combined_data <- merge(malaria_data, intervention_data, 
                              by = c("ISO3", "Name", "Year"))
 
@@ -52,14 +49,13 @@ ghana_combined_data <- merge(malaria_data, intervention_data,
 ghana_full_data <- merge(ghana_combined_data, treatment_data, 
                          by = c("ISO3", "Name", "Year"), all = TRUE)
 
-# Check structure of merged data
 str(ghana_full_data)
 
-# Merge shapefile with malaria data
+# shapefile + malaria data
 ghana_map_data <- merge(ghana_shapefile, malaria_data, 
                         by.x = "Region", by.y = "Name", all.x = TRUE)
 
-# Check for NA values in the merged data
+# Checking for NA values in the merged data
 summary(ghana_map_data)
 ghana_map_data <- ghana_map_data %>% filter(!is.na(Value))
 
@@ -67,10 +63,9 @@ ghana_map_data <- ghana_map_data %>% filter(!is.na(Value))
 ghana_sf <- ghana_shapefile %>%
   left_join(ghana_full_data, by = c("Region" = "Name"))
 
-# Check structure of spatial data
 str(ghana_sf)
 
-# Aggregate incidence rates by region and year
+# Aggregating incidence rates by region and year
 ghana_hotspots <- malaria_data %>%
   group_by(Name, Year) %>%
   summarize(average_incidence = mean(Value, na.rm = TRUE))
@@ -80,7 +75,7 @@ temporal_trends <- malaria_data %>%
   group_by(Year) %>%
   summarize(mean_incidence = mean(Value, na.rm = TRUE))
 
-# Plot temporal trends
+# Plotting temporal trends
 plotTrends <- ggplot(temporal_trends, aes(x = Year, y = mean_incidence)) +
   geom_line(color = "blue") +
   geom_point(color = "red") +
@@ -89,7 +84,6 @@ plotTrends <- ggplot(temporal_trends, aes(x = Year, y = mean_incidence)) +
        y = "Mean Incidence (Cases per Thousand)") +
   theme_minimal()
 
-# Make plot interactive
 interactiveTrends <- ggplotly(plotTrends)
 interactiveTrends
 
@@ -97,7 +91,7 @@ interactiveTrends
 ghana_map_2015 <- ghana_map_data %>%
   filter(Year == 2015)
 
-# Plot interactive malaria hotspots map for 2015
+# Plotting interactive malaria hotspots map for 2015
 tmap_mode("view")
 malaria_hotspots_map <- tm_shape(ghana_map_2015) +
   tm_polygons(
@@ -124,11 +118,11 @@ comparison <- ghana_combined_data %>%
             Mean_Intervention = mean(Value.y, na.rm = TRUE))
 print(comparison)
 
-# Join comparison data with spatial data
+# comparison data + spatial data
 ghana_map_data <- ghana_sf %>%
   left_join(comparison, by = c("Region" = "Name"), relationship = "many-to-many")
 
-# Plot comparison
+# Plotting comparison
 tmap_mode("plot")
 tm_shape(ghana_map_data) +
   tm_polygons(
@@ -162,14 +156,14 @@ print(moran_test)
 local_moran <- localmoran(values, lw, zero.policy = TRUE)
 ghana_sf$local_moran <- local_moran[, 1]
 
-# Visualize Local Moran's I
+# Visualizing Local Moran's I
 tmap_mode("view")
 tm_shape(ghana_sf) +
   tm_polygons("local_moran", style = "quantile", palette = "-RdBu", midpoint = 0, title = "LISA (Local Moran's I)") +
   tm_layout(main.title = "Local Moran's I Visualization")
 
 # Variogram Analysis
-# Convert centroids to spatial object
+# Converting centroids to spatial object
 ghana_sf$centroid <- st_centroid(ghana_sf$geometry)
 ghana_sp <- as(ghana_sf, "Spatial")
 
@@ -182,7 +176,7 @@ model_initial <- vgm(psill = 8000, model = "Exp", range = 200, nugget = 1500)
 vm_fit <- fit.variogram(v.m, model = model_initial, fit.method = 6)
 print(vm_fit)
 
-# Plot fitted variogram
+# Plotting fitted variogram
 plot(v.m, vm_fit, plot.numbers = TRUE, main = "Fitted Variogram Model")
 
 # Spatial Lag Model
@@ -196,11 +190,10 @@ tm_shape(ghana_sf) +
   tm_borders() +
   tm_layout(title = "Spatial Influence of Intervention Coverage")
 
-# Shiny UI
+# Dashboard
 ui <- fluidPage(
   titlePanel("Malaria Spatio-Temporal Dashboard"),
   
-  # Custom CSS for styling
   tags$head(
     tags$style(HTML("
       body {
@@ -240,9 +233,8 @@ ui <- fluidPage(
     "))
   ),
   
-  # Split layout for the dashboard
   verticalLayout(
-    # Upper half: Visualizations and controls (not scrollable)
+    # Upper half: Visualizations and controls
     fluidRow(
       column(
         width = 3,
@@ -288,13 +280,13 @@ ui <- fluidPage(
       )
     ),
     
-    # Lower half: Ghana Map Data Table (scrollable)
+    # Lower half: Ghana Map Data Table
     fluidRow(
       column(
         width = 12,
         wellPanel(
           h4("Ghana Map Data"),
-          div(class = "scrollable-container",  # Apply the scrollable container class
+          div(class = "scrollable-container",
               DTOutput("ghana_map_data_table"))
         )
       )
@@ -304,14 +296,13 @@ ui <- fluidPage(
 
 # Server logic
 server <- function(input, output, session) {
-  # Reactive dataset based on selected year
   year_data <- reactive({
     req(input$year)
     ghana_map_data %>%
       filter(Year == as.numeric(input$year))
   })
   
-  # Render Leaflet Map
+  # Leaflet Map
   output$map <- renderLeaflet({
     req(year_data(), input$metric)
     
@@ -330,12 +321,12 @@ server <- function(input, output, session) {
       addLegend(pal = pal, values = year_data()[[input$metric]], title = input$metric, position = "bottomright")
   })
   
-  # Render Interactive Trends Plot
+  # Rendering Interactive Trends Plot
   output$interactive_trends <- renderPlotly({
     plotly::ggplotly(interactiveTrends)  # Convert ggplot to interactive plotly
   })
   
-  # Render Comparison Plot
+  # Rendering Comparison Plot
   output$comparison_plot <- renderPlot({
     # Plot comparison data
     ggplot(comparison, aes(x = Period, y = Mean_Incidence, fill = Period)) +
@@ -346,22 +337,19 @@ server <- function(input, output, session) {
       theme_minimal()
   })
   
-  # Render Fitted Variogram Plot
+  # Rendering Fitted Variogram Plot
   output$fitted_variogram <- renderPlot({
-    # Replace `v.m` and `vm_fit` with your actual variogram and fitted model
     plot(v.m, vm_fit, plot.numbers = TRUE, main = "Fitted Variogram Model")
   })
   
-  # Render Marginal Effects Map
+  # Rendering Marginal Effects Map
   output$marginal_effects <- renderTmap({
     req(ghana_sf)
     
-    # Ensure required column exists
     if (!"marginal_effects" %in% colnames(ghana_sf)) {
       return(NULL)
     }
     
-    # Set tmap mode for rendering in Shiny
     tmap_mode("view")  # Interactive mode
     
     # Create the tmap visualization
@@ -439,12 +427,12 @@ server <- function(input, output, session) {
   # Ghana Map Data Table
   output$ghana_map_data_table <- renderDT({
     datatable(ghana_map_data, options = list(
-      pageLength = 10,  # Show 10 rows per page
-      scrollX = TRUE,   # Enable horizontal scrolling
-      scrollY = "300px" # Enable vertical scrolling with a fixed height
+      pageLength = 10,
+      scrollX = TRUE,
+      scrollY = "300px"
     ))
   })
 }
 
-# Running Shiny App
+# Running Dashboard
 shinyApp(ui, server)

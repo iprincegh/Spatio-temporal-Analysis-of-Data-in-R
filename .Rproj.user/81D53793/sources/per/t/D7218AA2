@@ -3,7 +3,7 @@
     "path": "~/Desktop/R Project/GHmalariaanalysis.R",
     "project_path": "GHmalariaanalysis.R",
     "type": "r_source",
-    "hash": "2630247384",
+    "hash": "4172910238",
     "contents": "",
     "dirty": false,
     "created": 1736886152142.0,
@@ -13,15 +13,15 @@
         "tempName": "Untitled1",
         "source_window_id": "",
         "Source": "Source",
-        "cursorPosition": "449,20",
-        "scrollLine": "415"
+        "cursorPosition": "434,1",
+        "scrollLine": "403"
     },
     "folds": "",
-    "lastKnownWriteTime": 1740775365,
+    "lastKnownWriteTime": 1740945750,
     "encoding": "UTF-8",
     "collab_server": "",
     "source_window": "",
-    "last_content_update": 1740775365704,
+    "last_content_update": 1740945750891,
     "read_only": false,
     "read_only_alternatives": []
 }
